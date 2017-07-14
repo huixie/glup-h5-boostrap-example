@@ -2,7 +2,7 @@
  * @Author: huixie 
  * @Date: 2017-07-11 14:36:38 
  * @Last Modified by: huixie
- * @Last Modified time: 2017-07-14 15:05:54
+ * @Last Modified time: 2017-07-14 20:45:09
  */
 var gulp = require('gulp')
 var gutil = require('gulp-util')
@@ -14,6 +14,10 @@ var minifycss = require('gulp-minify-css')//压缩 CSS
 var autoprefixer=require('gulp-autoprefixer')//autoprefixer 解析 CSS 文件并且添加浏览器前缀到CSS规则里。
 var imagemin = require('gulp-imagemin')
 var less = require('gulp-less')
+// var webserver = require('gulp-webserver')
+var browserSync=require('browser-sync').create()
+
+var reload=browserSync.reload
 
 /*让命令行输出的文字带颜色*/
 // gulp.task('default', function () {
@@ -42,7 +46,8 @@ gulp.task('watchjs', function () {
         sourcemaps.init(),
         uglify(),
         sourcemaps.write('./'),
-        gulp.dest(paths.distDir)
+        gulp.dest(paths.distDir),
+        reload({stream: true})
       ])
       combined.on('error', handleError)// 捕获错误信息。
     })
@@ -55,7 +60,8 @@ gulp.task('uglifyjs', function () {
     sourcemaps.init(),
     uglify(),
     sourcemaps.write('./'),
-    gulp.dest('app/js/')
+    gulp.dest('app/js/'),
+    reload({stream: true})
   ])
   combined.on('error', handleError)
 })
@@ -72,6 +78,7 @@ gulp.task('watchcss', function () {
     .pipe(minifycss())
     .pipe(sourcemaps.write('./'))
     .pipe(gulp.dest(paths.distDir))
+    .pipe(reload({stream: true}))
   })
 })
 
@@ -83,6 +90,7 @@ gulp.task('minifycss', function () {
   .pipe(minifycss())
   .pipe(sourcemaps.write('./'))
   .pipe(gulp.dest('app/css/'))
+  .pipe(reload({stream: true}))
 })
 
 /*配置less*/
@@ -98,7 +106,8 @@ gulp.task('watchless', function () {
       less(),
       minifycss(),
       sourcemaps.write('./'),
-      gulp.dest(paths.distDir)
+      gulp.dest(paths.distDir),
+      reload({stream: true})
     ])
     combined.on('error', handleError)
   })
@@ -114,7 +123,8 @@ gulp.task('lesscss', function () {
     less(),
     minifycss(),
     sourcemaps.write('./'),
-    gulp.dest('app/css/')
+    gulp.dest('app/css/'),
+    reload({stream: true}),
   ])
   combined.on('error', handleError)
 })
@@ -129,6 +139,7 @@ gulp.task('watchimage', function () {
     gulp.src(paths.srcPath)
     .pipe(imagemin({progressive: true}))
     .pipe(gulp.dest(paths.distDir))
+    .pipe(reload({stream: true}))
   })
 })
 //编译所有image
@@ -136,7 +147,31 @@ gulp.task('image', function () {
   gulp.src('origin/images/**/*')
   .pipe(imagemin({progressive: true}))
   .pipe(gulp.dest('app/images'))
+  .pipe(reload({stream: true}))
 })
 
+//启动服务
+// gulp.task('webserver',function(){
+//   gulp.src('./')
+//   .pipe(webserver({
+//     port: 3000,//端口
+//     host: 'localhost',//域名
+//     liveload: true,//实时刷新代码。不用f5刷新
+//     directoryListing: {
+//     path: './',
+//     enable: true
+//     }
+//   }))
+// })
 
-gulp.task('default', ['watchjs',  'watchless', 'watchimage'])
+gulp.task('default', ['watchjs',  'watchless', 'watchimage'],function(){
+  browserSync.init({
+    //server:'./app', // 从这个项目的根目录启动服务器
+    server:{
+      baseDir: "./app",
+      index: "index.html"
+    },
+    port: 4000
+  })
+  gulp.watch("app/**/*.html").on("change",reload)
+})
